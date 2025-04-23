@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 # 1. Hyperparameters
 # -------------------------------
 batch_size = 64
-learning_rate = 0.001 #0.01
+learning_rate = 0.1 #0.01
 epochs = 20
 
 # -------------------------------
@@ -29,8 +29,16 @@ test_loader  = DataLoader(test_data, batch_size=batch_size)
 # -------------------------------
 # 3. MLP Model
 # -------------------------------
+class RePU(nn.Module):
+    def __init__(self, n=2):
+        super(RePU, self).__init__()
+        self.n = n
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        return self.relu(x) ** self.n
 class ActivatedWeightedSum(nn.Module):
-    def __init__(self, input_dim, output_dim, activation=nn.ReLU()):
+    def __init__(self, input_dim, output_dim, activation=RePU()):
         super().__init__()
         self.weight = nn.Parameter(torch.randn(output_dim, input_dim))
         self.bias = nn.Parameter(torch.zeros(output_dim))
@@ -45,28 +53,14 @@ class ActivatedWeightedSum(nn.Module):
         return out                              # -> (batch_size, output_dim)
 
 
-class MLP(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.layers = nn.Sequential(
-            nn.Linear(784,128),
-            nn.ReLU(),
-            nn.Linear(128,64),
-            nn.ReLU(),
-            nn.Linear(64, 10)  # output layer
-        )
-
-    def forward(self, x):
-        return self.layers(x)
 class activated_sum_MLP(nn.Module):
     def __init__(self):
         super().__init__()
         self.layers = nn.Sequential(
-            ActivatedWeightedSum(784, 128),
-            ActivatedWeightedSum(128, 64),
-            #nn.Linear(64, 10)  # output layer
+            ActivatedWeightedSum(784,64),
+            #ActivatedWeightedSum(256, 10),
         )
-        self.out_layer = ActivatedWeightedSum(64, 10)
+        self.out_layer =nn.Linear(64, 10)
 
     def forward(self, x):
         x = self.layers(x)
@@ -75,7 +69,7 @@ class activated_sum_MLP(nn.Module):
         return x
 
 
-model = MLP()
+#model = MLP()
 model = activated_sum_MLP()
 #test_model = ActivatedWeightedSum(784,128)
 # -------------------------------
